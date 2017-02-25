@@ -27,7 +27,6 @@ type MaximaAPI = "maxima" :> QueryParam "maximainput" String :> Get '[JSON, HTML
 
 data Form = Form { greeting :: Text , action :: Text } deriving Generic ; instance ToJSON Form
 
--- XXX: add here foldMap toHtml to generate list of results not just one
 instance ToHtml Form where
   toHtml form = printedtext <> formitself
     where
@@ -52,15 +51,10 @@ form2 p ior x = case x of Nothing -> return form1
                                         let newlog1 = log1 <> form12 (pack ma) 
                                         liftIO (writeIORef ior newlog1)
                                         return (log1 <> form12 (pack ma))
-                                    -- let str = (replace "\\\\" "\\" . filter (\el -> el /='\n' && el /='\"')) manswer
-                                    -- let tex = readTeX str
-                                    -- case tex of Left  errr    ->  do _ <- liftIO (putStrLn errr) ; return (form12 manswer)
-                                    --             Right reply -> do  let manswerML = showElement (writeMathML DisplayInline reply)
-                                    --                                return (form12 manswerML)
+
+
 maximaAPI                     = Proxy                      :: Proxy MaximaAPI 
 server                        = form2                      :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
--- app (p :: MaximaServerParams) = serve maximaAPI (server p) :: Application -- classic variable passing in argument
-
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
