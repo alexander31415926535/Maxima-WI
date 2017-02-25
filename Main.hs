@@ -14,6 +14,7 @@ module Main where
 import Util
 import Maxima
 import Prelude hiding (lines)
+import Data.IORef
 
 -- * Html render with lucid, types
 data HTMLLucid
@@ -37,26 +38,35 @@ instance ToHtml Form where
                            input_ [type_ "submit"])
   toHtmlRaw = toHtml
 
+instance Monoid Form where
+  mempty        = Form "" ""
+  mappend f1 f2 = Form (greeting f1 <> greeting f2) (action f1)
+
 -- ** Main algorythm
 
 form1    =  Form "Maxima input here: " "maximaquery" 
 form12 s =  Form s "maximaquery" -- s :: String
-form2 p f x = case x of Nothing -> return f 
-                        Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
-                                      return (form12 ((greeting f) <> (pack ma)))
+form2 p ior x = case x of Nothing -> return form1 
+                          Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
+                                        log1 <- liftIO (readIORef ior)               --- DANGER!!! 
+                                        let newlog1 = log1 <> form12 (pack ma) 
+                                        liftIO (writeIORef ior newlog1)
+                                        return (log1 <> form12 (pack ma))
                                     -- let str = (replace "\\\\" "\\" . filter (\el -> el /='\n' && el /='\"')) manswer
                                     -- let tex = readTeX str
                                     -- case tex of Left  errr    ->  do _ <- liftIO (putStrLn errr) ; return (form12 manswer)
                                     --             Right reply -> do  let manswerML = showElement (writeMathML DisplayInline reply)
                                     --                                return (form12 manswerML)
 maximaAPI                     = Proxy                      :: Proxy MaximaAPI 
-server                        = form2                      :: (MaximaServerParams  -> Form -> Server MaximaAPI)
-app (x :: MaximaServerParams) = serve maximaAPI (server x (form12 " ")) :: Application
+server                        = form2                      :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
+-- app (p :: MaximaServerParams) = serve maximaAPI (server p) :: Application -- classic variable passing in argument
 
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
+           log <- newIORef (form12 " ")
+           let app (p :: MaximaServerParams) = serve maximaAPI (server p log) :: Application -- classic variable passing in argument
            -- _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
            putStrLn "Maxima and Server started." 
-           run 8081 (app params)
+           run 8081 (app params )
 
