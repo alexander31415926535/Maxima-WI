@@ -43,9 +43,9 @@ instance Monoid Form where
 
 -- ** Main algorythm
 
-form1    =  Form "Maxima input here: " "maximaquery" 
-form12 s =  Form s "maximaquery" -- s :: String
-form2 p ior x = case x of Nothing -> return form1 
+formone    =  Form "Maxima input here: " "maximaquery" 
+form12 s   =  Form s "maximaquery" -- s :: String
+form2 p ior x = case x of Nothing -> return formone
                           Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1 <- liftIO (readIORef ior)               --- DANGER!!! 
                                         let newlog1 = log1 <> form12 (pack ma) 
