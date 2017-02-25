@@ -13,7 +13,7 @@
 module Main where
 import Util
 import Maxima
-import Prelude hiding (lines)
+import qualified Prelude as P 
 import Data.IORef
 
 -- * Html render with lucid, types
@@ -44,13 +44,15 @@ instance Monoid Form where
 -- ** Main algorythm
 
 formone    =  Form "Maxima input here: " "maximaquery" 
+
 form12 s   =  Form s "maximaquery" -- s :: String
 form2 p ior x = case x of Nothing -> return formone
                           Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1 <- liftIO (readIORef ior)               --- DANGER!!! 
-                                        let newlog1 = log1 <> form12 (pack ma) 
+                                        let ma1 = "(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
+                                        let newlog1 = log1 <> form12 (pack ma1) 
                                         liftIO (writeIORef ior newlog1)
-                                        return (log1 <> form12 (pack ma))
+                                        return (log1 <> form12 (pack ma1))
 
 
 maximaAPI                     = Proxy                      :: Proxy MaximaAPI 
@@ -58,8 +60,8 @@ server                        = form2                      :: (MaximaServerParam
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
-           log <- newIORef (form12 " ")
-           let app (p :: MaximaServerParams) = serve maximaAPI (server p log) :: Application -- classic variable passing in argument
+           flog   <- newIORef (form12 "")                            -- XXX: DANGER!!! IORefS!!
+           let app (p :: MaximaServerParams) = serve maximaAPI (server p flog) :: Application -- classic variable passing in argument
            -- _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
            putStrLn "Maxima and Server started." 
            run 8081 (app params )
