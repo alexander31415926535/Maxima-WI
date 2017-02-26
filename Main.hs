@@ -66,3 +66,5 @@ main = do  params <- startMaximaServer 4424
            putStrLn "Maxima and Server started." 
            run 8081 (app params )
 
+
+
