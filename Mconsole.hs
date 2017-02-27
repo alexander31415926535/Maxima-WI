@@ -1,7 +1,7 @@
 #!/usr/bin/runghc 
 
 {-# LANGUAGE MultiWayIf #-}
-
+-- * Mconsole
 -- This module attempts to introduce unicode goodies into maxima text console. things like x^2 are written in proper unicode.
 
 module Mconsole
@@ -12,6 +12,9 @@ import Data.Attoparsec.ByteString.Char8
 import Data.ByteString.Char8 (pack) 
 import Maxima
 import Data.List.Extra hiding (any)
+import System.Console.Haskeline
+import Control.Monad.Trans (lift)
+
 -- TODO: Add haskeline support, to have history etc.
   
 maximaPrompt srv = do
@@ -44,4 +47,33 @@ powerp = "Powerp"  <^> ((:) <$> char '^' <*> many1 digit)
 allpowers :: Parser [String]
 allpowers = "allpowers"  <^> many' (takeTill (== '^') *> powerp)
          
-main = runMaxima 4424 maximaPrompt
+-- oldmain = runMaxima 4424 maximaPrompt
+
+main :: IO ()
+main = runMaxima 4424 haskelinemod
+
+haskelinemod srv = runInputT defaultSettings loop
+  where
+    loop :: InputT IO ()
+    loop = do
+      minput <- getInputLine "> "
+      case minput of
+       Nothing -> return ()
+       Just "quit" -> return ()
+       Just "help"  -> do
+         lift $ listcommands
+         loop
+       Just input -> do
+         answer <- lift $ askMaxima srv input
+         let ans = tounicode answer
+         outputStrLn $ ans
+         loop
+
+listcommands :: IO ()
+listcommands = do
+  mapM_ putStrLn ["Following commands are active:",
+                  "help",
+                  "quit"]
+
+
+
