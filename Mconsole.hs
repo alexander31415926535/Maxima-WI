@@ -1,4 +1,8 @@
+#!/usr/bin/runghc 
+
 {-# LANGUAGE MultiWayIf #-}
+
+-- This module attempts to introduce unicode goodies into maxima text console. things like x^2 are written in proper unicode.
 
 module Mconsole
     ( maximaPrompt 
@@ -19,7 +23,7 @@ maximaPrompt srv = do
         do putStrLn "Type maxima command or :q to quit."
            maximaPrompt srv
       | otherwise -> do answer <- askMaxima srv question
-                        mapM_ (putStrLn . tounicode) answer
+                        mapM_ (putStr . tounicode ) [answer]
                         maximaPrompt srv
                
 
