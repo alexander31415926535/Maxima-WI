@@ -22,7 +22,7 @@ instance Accept HTMLLucid                          where contentType _ = "text" 
 instance ToHtml a => MimeRender HTMLLucid a        where  mimeRender _ = renderBS . toHtml
 instance             MimeRender HTMLLucid (Html a) where  mimeRender _ = renderBS
 -- * Main
--- ** Types and APIs
+-- ** Types,Instances and APIs
 type MaximaAPI = "maxima" :> QueryParam "maximainput" String :> Get '[JSON, HTMLLucid] Form
 
 data Form = Form { greeting :: Text , action :: Text } deriving Generic ; instance ToJSON Form
