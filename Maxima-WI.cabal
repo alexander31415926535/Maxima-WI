@@ -15,6 +15,9 @@ extra-source-files:  README.md
 extra-source-files:  first-web-app.hs
 extra-source-files:  Mcommands.hs
 extra-source-files:  Mcommlist.hs
+extra-source-files:  default.nix
+extra-source-files:  release0.nix
+extra-source-files:  stack.yaml
 
 cabal-version:       >=1.10
 
