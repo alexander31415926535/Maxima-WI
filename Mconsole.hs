@@ -21,7 +21,6 @@ tounicode str = foldl1 (.) (zipWith replace  ("*":terms) ("·":helper terms)) st
   where terms = case parseOnly allpowers (pack str) of
                  Left _     -> []
                  Right pstr -> pstr
-
         helper xp = map (foldl1 (.) (zipWith  replace ["^","1","2","3","4","5","6","7","8","9","0"]
                                                       ["","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹","⁰"])) xp
 
