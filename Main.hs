@@ -11,6 +11,7 @@
 {-# LANGUAGE LambdaCase #-}
 -- ** Imports
 module Main where
+
 import Util
 import Maxima
 import qualified Prelude as P 

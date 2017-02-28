@@ -5,7 +5,7 @@
 -- This module attempts to introduce unicode goodies into maxima text console. things like x^2 are written in proper unicode.
 
 -- * Imports
-module Mconsole where
+module Main where
 
 import Data.Attoparsec.ByteString.Char8 
 import Data.ByteString.Char8 (pack) 
