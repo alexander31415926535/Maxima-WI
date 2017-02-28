@@ -45,6 +45,7 @@ instance Monoid Form where
 
 formone    =  Form "Maxima input here: " "maximaquery" 
 
+-- Maxima answer is of the form " \n(%o3)....\n"
 form12 s   =  Form s "maximaquery" -- s :: String
 form2 p ior x = case x of Nothing -> return formone
                           Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
