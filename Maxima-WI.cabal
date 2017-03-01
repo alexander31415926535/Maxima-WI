@@ -6,8 +6,8 @@ license:             GPL-3
 license-file:        LICENSE
 author:              Alexander 31415926535
 maintainer:          alex@thebest
-copyright:           Alexander Kubelskyi, Danylo Hlynskyi
-category:            Web
+copyright:           Alexander 31415926535, Danylo Hlynskyi
+category:            Math
 build-type:          Simple
 
 extra-source-files:  ChangeLog.md
