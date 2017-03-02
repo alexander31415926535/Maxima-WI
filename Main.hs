@@ -47,6 +47,9 @@ instance Monoid Form where
 -- ** Main algorythm
 -- ** Parsing plot commands Svg output
 
+
+-- XXX: Plotting can be done using maxima macro :  plotwi(x,y) ::= plot2d(x,y,[svg_file,"maxima-wi-communication.svg"])
+
 (<^>) = flip (<?>)              -- more convenient help combinator
 
 svgfilep :: A.Parser B.ByteString
@@ -56,7 +59,7 @@ isplot :: String -> Bool
 isplot x = case parseOnly isplotp (B.pack x) of
              Left _ -> False
              Right _ -> True
-           where isplotp = string "plotwi" <* takeByteString  
+           where isplotp = "Is input a plot command" <^> string "plotwi" <* takeByteString  
 
 svgfile :: String -> Maybe String
 svgfile x = case parseOnly svgfilep (B.pack x) of
@@ -70,10 +73,11 @@ formone    =  Form "Maxima input here: " "maximaquery"
 
 -- Maxima answer is of the form " \n(%o3)....\n"
 form12 s   =  Form s "maximaquery" -- s :: String
-form2 p ior x = case x of Nothing -> return formone
+form2 p ior x = case x of Nothing -> return formone -- a is result returned by servant -- an input string
                           Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1 <- liftIO (readIORef ior)               --- DANGER!!! 
-                                        let ma1 = "(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
+                                        let ma1 = if isplot a then "Its a plot command!\n"
+                                                              else"(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
                                         let newlog1 = log1 <> form12 (pack ma1) 
                                         liftIO (writeIORef ior newlog1)
                                         return (log1 <> form12 (pack ma1))

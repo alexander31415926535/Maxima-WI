@@ -43,12 +43,13 @@ form1    =  Form "Maxima input here: " "maximaquery"
 form12 s =  Form (pack s) "maximaquery" -- s :: String
 form2 p x = case x of Nothing -> return form1 
                       Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
-                                    return (form12 ma)
-                                    -- let str = (replace "\\\\" "\\" . filter (\el -> el /='\n' && el /='\"')) manswer
-                                    -- let tex = readTeX str
-                                    -- case tex of Left  errr    ->  do _ <- liftIO (putStrLn errr) ; return (form12 manswer)
-                                    --             Right reply -> do  let manswerML = showElement (writeMathML DisplayInline reply)
-                                    --                                return (form12 manswerML)
+--                                    return (form12 ma)
+            -- This branch uses tex representation and converts output to MathML
+                                    let str = (replace "\\\\" "\\" . filter (\el -> el /='\n' && el /='\"')) ma
+                                    let tex = readTeX str
+                                    case tex of Left  errr     -> do  _ <- liftIO (putStrLn errr) ; return (form12 ma)
+                                                Right reply    -> do  let manswerML = showElement (writeMathML DisplayInline reply)
+                                                                      return (form12 manswerML)
 
 
 maximaAPI                     = Proxy                      :: Proxy MaximaAPI 
@@ -57,7 +58,7 @@ app (x :: MaximaServerParams) = serve maximaAPI (server x) :: Application
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
-           -- _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
+           _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
            putStrLn "Maxima and Server started." 
            run 8081 (app params)
 
