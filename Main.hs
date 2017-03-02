@@ -16,6 +16,8 @@ import Util
 import Maxima
 import qualified Prelude as P 
 import Data.IORef
+import Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Char8 as B
 
 -- * Html render with lucid, types
 data HTMLLucid
@@ -43,6 +45,26 @@ instance Monoid Form where
   mappend f1 f2 = Form (greeting f1 <> greeting f2) (action f1)
 
 -- ** Main algorythm
+-- ** Parsing plot commands Svg output
+
+(<^>) = flip (<?>)              -- more convenient help combinator
+
+svgfilep :: A.Parser B.ByteString
+svgfilep = "Svg file parser" <^> skipWhile (=='[') *> skipWhile (==',') *> skipWhile (=='\"') *> A.takeWhile (=='\"')
+
+isplot :: String -> Bool
+isplot x = case parseOnly isplotp (B.pack x) of
+             Left _ -> False
+             Right _ -> True
+           where isplotp = string "plotwi" <* takeByteString  
+
+svgfile :: String -> Maybe String
+svgfile x = case parseOnly svgfilep (B.pack x) of
+              Left _ -> Nothing
+              Right r -> Just (B.unpack r)
+                 
+  
+-- ** Form and main
 
 formone    =  Form "Maxima input here: " "maximaquery" 
 
