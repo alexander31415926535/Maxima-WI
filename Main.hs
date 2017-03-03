@@ -1,14 +1,14 @@
 #!/usr/bin/runghc 
 -- * Imp
 -- ** Pragmas
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeOperators         #-}
 -- ** Imports
 module Main where
 
@@ -28,12 +28,13 @@ instance             MimeRender HTMLLucid (Html a) where  mimeRender _ = renderB
 -- ** Types,Instances and APIs
 type MaximaAPI = "maxima" :> QueryParam "maximainput" String :> Get '[JSON, HTMLLucid] Form
 
-data Form = Form { greeting :: Text , action :: Text } deriving Generic ; instance ToJSON Form
+data Form = Form { greeting :: Text , action :: Text , svgplot :: Text } deriving Generic ; instance ToJSON Form
 
 instance ToHtml Form where
-  toHtml form = printedtext <> formitself
+  toHtml form = printedtext <> plot <> formitself
     where
     printedtext = ol_ $ mconcat (map (li_ . toHtmlRaw) (lines (greeting form)))
+    plot        = (toHtmlRaw (svgplot form))
     formitself  = form_ [formaction_ (action form), formmethod_ "GET" ] (do
                            toHtml ("Input:"::Text)
                            input_ [name_ "maximainput",type_ "text", autofocus_]
@@ -41,8 +42,8 @@ instance ToHtml Form where
   toHtmlRaw = toHtml
 
 instance Monoid Form where
-  mempty        = Form "" ""
-  mappend f1 f2 = Form (greeting f1 <> greeting f2) (action f1)
+  mempty        = Form "" "" ""
+  mappend f1 f2 = Form (greeting f1 <> greeting f2) (action f1) (svgplot f2)
 
 -- ** Main algorythm
 -- ** Parsing plot commands Svg output
@@ -53,7 +54,7 @@ instance Monoid Form where
 (<^>) = flip (<?>)              -- more convenient help combinator
 
 svgfilep :: A.Parser B.ByteString
-svgfilep = "Svg file parser" <^> skipWhile (=='[') *> skipWhile (==',') *> skipWhile (=='\"') *> A.takeWhile (=='\"')
+svgfilep = "Svg file parser" <^> skipWhile (/='[') *> skipWhile (/=',') *> skipWhile (/='\"') *> char '\"' *> A.takeWhile (/='\"')
 
 isplot :: String -> Bool
 isplot x = case parseOnly isplotp (B.pack x) of
@@ -69,18 +70,28 @@ svgfile x = case parseOnly svgfilep (B.pack x) of
   
 -- ** Form and main
 
-formone    =  Form "Maxima input here: " "maximaquery" 
+formone    =  Form "Maxima input here: " "maximaquery" ""
 
 -- Maxima answer is of the form " \n(%o3)....\n"
-form12 s   =  Form s "maximaquery" -- s :: String
+form12 s plot =  Form s "maximaquery" plot 
 form2 p ior x = case x of Nothing -> return formone -- a is result returned by servant -- an input string
                           Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1 <- liftIO (readIORef ior)               --- DANGER!!! 
-                                        let ma1 = if isplot a then "Its a plot command!\n"
-                                                              else"(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
-                                        let newlog1 = log1 <> form12 (pack ma1) 
-                                        liftIO (writeIORef ior newlog1)
-                                        return (log1 <> form12 (pack ma1))
+                                        let ma1 = if isplot a then case (svgfile ((P.unlines . tail . P.lines) ma)) of
+                                                                     Nothing -> "Could not recognize filename"
+                                                                     Just svgp -> "(%i) " ++ a ++ "\n" ++ svgp
+                                                              else "(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
+                                        case (svgfile ((P.unlines . tail . P.lines) ma)) of
+                                                                     Nothing -> do
+                                                                                  let newlog1 = log1 <> form12 (pack ma1) ""
+                                                                                  liftIO (writeIORef ior newlog1)
+                                                                                  return (log1 <> (form12 (pack ma1) ""))
+                                                                     Just svgfpath -> do
+                                                                       svgcontent <- liftIO (readFile svgfpath)
+                                                                       let newlog1 = log1 <> form12 (pack ma1) ""
+                                                                       liftIO (writeIORef ior newlog1)
+                                                                       return (log1 <> (form12 (pack ma1) (pack svgcontent)))
+
 
 
 maximaAPI                     = Proxy                      :: Proxy MaximaAPI 
@@ -88,9 +99,10 @@ server                        = form2                      :: (MaximaServerParam
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
-           flog   <- newIORef (form12 "")                            -- XXX: DANGER!!! IORefS!!
+           flog   <- newIORef (form12 "" "")                            -- XXX: DANGER!!! IORefS!!
            let app (p :: MaximaServerParams) = serve maximaAPI (server p flog) :: Application -- classic variable passing in argument
            -- _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
+           _      <- askMaxima params "plotwi (x,y)::= plot2d(x,y,[svg_file,\"maximawi-plot.svg\"])" -- setting plot macro
            putStrLn "Maxima and Server started." 
            run 8081 (app params )
 
