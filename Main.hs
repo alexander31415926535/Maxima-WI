@@ -26,7 +26,8 @@ instance ToHtml a => MimeRender HTMLLucid a        where  mimeRender _ = renderB
 instance             MimeRender HTMLLucid (Html a) where  mimeRender _ = renderBS
 -- * Main
 -- ** Types,Instances and APIs
-type MaximaAPI = "maxima" :> QueryParam "maximainput" String :> Get '[JSON, HTMLLucid] Form
+type MaximaAPI = QueryParam "maximainput" String :> Get '[JSON, HTMLLucid] Form
+                 :<|> Get '[JSON, HTMLLucid] Form -- root path
 
 data Form = Form { greeting :: Text , action :: Text , svgplot :: Text } deriving Generic ; instance ToJSON Form
 
@@ -93,9 +94,10 @@ form2 p ior x = case x of Nothing -> return formone -- a is result returned by s
                                                                        return (log1 <> (form12 (pack ma1) (pack svgcontent)))
 
 
+-- ** Server and main
 
-maximaAPI                     = Proxy                      :: Proxy MaximaAPI 
-server                        = form2                      :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
+maximaAPI                     = Proxy                                          :: Proxy MaximaAPI 
+server   p flog               = form2 p flog :<|> return (formone)          -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
@@ -105,6 +107,7 @@ main = do  params <- startMaximaServer 4424
            _      <- askMaxima params "plotwi (x,y)::= plot2d(x,y,[svg_file,\"maximawi-plot.svg\"])" -- setting plot macro
            putStrLn "Maxima and Server started." 
            run 8081 (app params )
+
 
 
 
