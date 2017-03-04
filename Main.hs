@@ -72,9 +72,9 @@ findsvg x = case parseOnly svgfilep (B.pack x) of
 
 -- Maxima answer is of the form " \n(%o3)....\n"
 
-formone    =  Form "Maxima input here: " "maximaquery" ""
+formone            =  Form "Maxima input here: " "maximaquery" ""
 
-mkform str plot =  Form (pack str) "maximaquery" (pack plot)
+mkform str plot    =  Form (pack str) "maximaquery" (pack plot)
 
 answerMech int out = if isplot int then case findsvg out of
                                     Nothing -> "Could not recognize filename"
@@ -85,21 +85,17 @@ answerMech int out = if isplot int then case findsvg out of
 formhandler p ior x =
                 case x of Nothing -> return formone -- Just a below is result returned by servant -- an input string
                           Just a  -> do manswer@(_:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
-                                        log1      <- liftIO (readIORef ior)               --- DANGER!!! 
+                                        log1          <- liftIO (readIORef ior) --- DANGER!!! 
                                         let ma         = (P.unlines . tail . P.lines) manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
                                         let ma1        = answerMech a ma                    -- check if input a is a plot command
-                                        let maplotless = mkform ma1 ""
+                                        let newlog1    = log1 <> mkform ma1 ""
+                                        liftIO (writeIORef ior newlog1)
                                         case findsvg ma of
-                                                Nothing -> do
-                                                  let newlog1 = log1 <> maplotless
-                                                  liftIO (writeIORef ior newlog1)
-                                                  return (log1 <> maplotless)
-                                                Just svgfpath -> do
-                                                  svgcontent <- liftIO (readFile svgfpath)
-                                                  let newlog1 = log1 <> maplotless
-                                                  liftIO (writeIORef ior newlog1)
-                                                  return (log1 <> mkform ma1 svgcontent)
+                                         Nothing       -> return newlog1
+                                         Just svgfpath -> liftIO (readFile svgfpath) >>= \svgg -> return (log1 <> mkform ma1 svgg)
+  
 
+                    
 
 -- ** Server and main
 
