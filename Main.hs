@@ -74,7 +74,7 @@ findsvg x = case parseOnly svgfilep (B.pack x) of
 
 formone    =  Form "Maxima input here: " "maximaquery" ""
 
-makeform str plot =  Form (pack str) "maximaquery" (pack plot)
+mkform str plot =  Form (pack str) "maximaquery" (pack plot)
 
 answerMech int out = if isplot int then case findsvg out of
                                     Nothing -> "Could not recognize filename"
@@ -88,7 +88,7 @@ formhandler p ior x =
                                         log1      <- liftIO (readIORef ior)               --- DANGER!!! 
                                         let ma         = (P.unlines . tail . P.lines) manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
                                         let ma1        = answerMech a ma                    -- check if input a is a plot command
-                                        let maplotless = makeform ma1 ""
+                                        let maplotless = mkform ma1 ""
                                         case findsvg ma of
                                                 Nothing -> do
                                                   let newlog1 = log1 <> maplotless
@@ -98,7 +98,7 @@ formhandler p ior x =
                                                   svgcontent <- liftIO (readFile svgfpath)
                                                   let newlog1 = log1 <> maplotless
                                                   liftIO (writeIORef ior newlog1)
-                                                  return (log1 <> makeform ma1 svgcontent)
+                                                  return (log1 <> mkform ma1 svgcontent)
 
 
 -- ** Server and main
@@ -108,7 +108,7 @@ server   p flog               = formhandler p flog :<|> return formone         -
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
-           flog   <- newIORef (makeform "" "")                            -- XXX: DANGER!!! IORefS!!
+           flog   <- newIORef (mkform "" "")                            -- XXX: DANGER!!! IORefS!!
            let app (p :: MaximaServerParams) = serve maximaAPI (server p flog) :: Application -- classic variable passing in argument
            _      <- askMaxima params "plotwi (x,y)::= plot2d(x,y,[svg_file,\"maximawi-plot.svg\"])" -- setting plot macro
            putStrLn "Maxima and Server started." 
