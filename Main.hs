@@ -49,7 +49,6 @@ instance Monoid Form where
 -- ** Main algorythm
 -- ** Parsing plot commands Svg output
 
-
 -- XXX: Plotting can be done using maxima macro :  plotwi(x,y) ::= plot2d(x,y,[svg_file,"maxima-wi-communication.svg"])
 
 (<^>) = flip (<?>)              -- more convenient help combinator
@@ -63,37 +62,34 @@ isplot x = case parseOnly isplotp (B.pack x) of
              Right _ -> True
            where isplotp = "Is input a plot command" <^> string "plotwi" <* takeByteString  
 
-svgfile :: String -> Maybe String
-svgfile x = case parseOnly svgfilep (B.pack x) of
-              Left _ -> Nothing
-              Right r -> Just (B.unpack r)
+findsvg :: String -> Maybe String
+findsvg x = case parseOnly svgfilep (B.pack x) of
+                  Left _ -> Nothing
+                  Right r -> Just (B.unpack r)
                  
   
 -- ** Forms and handlers
 
-formone    =  Form "Maxima input here: " "maximaquery" ""
-
 -- Maxima answer is of the form " \n(%o3)....\n"
 
-tailLine = P.unlines . tail . P.lines
+formone    =  Form "Maxima input here: " "maximaquery" ""
 
 makeform str plot =  Form (pack str) "maximaquery" (pack plot)
 
-answerMach x y = if isplot x then case svgfile y of
+answerMech int out = if isplot int then case findsvg out of
                                     Nothing -> "Could not recognize filename"
-                                    Just svgfname -> astr x svgfname
-                             else astr x y 
+                                    Just svgfname -> astr int svgfname
+                             else astr int out 
                    where          astr al be = "(%i) " ++ al ++ "\n" ++ be -- answer string
-
    
 formhandler p ior x =
-                case x of Nothing -> return formone -- Just a is result returned by servant -- an input string
+                case x of Nothing -> return formone -- Just a below is result returned by servant -- an input string
                           Just a  -> do manswer@(_:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1      <- liftIO (readIORef ior)               --- DANGER!!! 
-                                        let ma  = tailLine manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
-                                        let ma1 = answerMach a ma                    -- check if input a is a plot command
+                                        let ma         = (P.unlines . tail . P.lines) manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
+                                        let ma1        = answerMech a ma                    -- check if input a is a plot command
                                         let maplotless = makeform ma1 ""
-                                        case svgfile ma of
+                                        case findsvg ma of
                                                 Nothing -> do
                                                   let newlog1 = log1 <> maplotless
                                                   liftIO (writeIORef ior newlog1)
@@ -114,7 +110,6 @@ main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
            flog   <- newIORef (makeform "" "")                            -- XXX: DANGER!!! IORefS!!
            let app (p :: MaximaServerParams) = serve maximaAPI (server p flog) :: Application -- classic variable passing in argument
-           -- _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
            _      <- askMaxima params "plotwi (x,y)::= plot2d(x,y,[svg_file,\"maximawi-plot.svg\"])" -- setting plot macro
            putStrLn "Maxima and Server started." 
            run 8081 (app params )
