@@ -74,26 +74,32 @@ svgfile x = case parseOnly svgfilep (B.pack x) of
 formone    =  Form "Maxima input here: " "maximaquery" ""
 
 -- Maxima answer is of the form " \n(%o3)....\n"
-makeform string plot =  Form (pack string) "maximaquery" (pack plot)
+
+tailLine = P.unlines . tail . P.lines
+
+makeform str plot =  Form (pack str) "maximaquery" (pack plot)
+
+answerMach x y = if isplot x then case svgfile y of
+                                    Nothing -> "Could not recognize filename"
+                                    Just svgp -> "(%i) " ++ x ++ "\n" ++ svgp
+                             else "(%i) " ++ x ++ "\n" ++ y -- x is input string
 
 formhandler p ior x =
-                case x of Nothing -> return formone -- a is result returned by servant -- an input string
-                          Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
-                                        log1 <- liftIO (readIORef ior)               --- DANGER!!! 
-                                        let ma1 = if isplot a then case (svgfile ((P.unlines . tail . P.lines) ma)) of
-                                                                     Nothing -> "Could not recognize filename"
-                                                                     Just svgp -> "(%i) " ++ a ++ "\n" ++ svgp
-                                                              else "(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
-                                        case (svgfile ((P.unlines . tail . P.lines) ma)) of
-                                                                     Nothing -> do
-                                                                                  let newlog1 = log1 <> makeform ma1 ""
-                                                                                  liftIO (writeIORef ior newlog1)
-                                                                                  return (log1 <> (makeform ma1 ""))
-                                                                     Just svgfpath -> do
-                                                                       svgcontent <- liftIO (readFile svgfpath)
-                                                                       let newlog1 = log1 <> makeform ma1 ""
-                                                                       liftIO (writeIORef ior newlog1)
-                                                                       return (log1 <> (makeform ma1  svgcontent))
+                case x of Nothing -> return formone -- Just a is result returned by servant -- an input string
+                          Just a  -> do manswer@(_:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
+                                        log1      <- liftIO (readIORef ior)               --- DANGER!!! 
+                                        let ma  = tailLine manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
+                                        let ma1 = answerMach a ma                    -- check if input a is a plot command
+                                        case svgfile ma of
+                                                Nothing -> do
+                                                  let newlog1 = log1 <> makeform ma1 ""
+                                                  liftIO (writeIORef ior newlog1)
+                                                  return (log1 <> (makeform ma1 ""))
+                                                Just svgfpath -> do
+                                                  svgcontent <- liftIO (readFile svgfpath)
+                                                  let newlog1 = log1 <> makeform ma1 ""
+                                                  liftIO (writeIORef ior newlog1)
+                                                  return (log1 <> (makeform ma1  svgcontent))
 
 
 -- ** Server and main
