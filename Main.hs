@@ -81,31 +81,34 @@ makeform str plot =  Form (pack str) "maximaquery" (pack plot)
 
 answerMach x y = if isplot x then case svgfile y of
                                     Nothing -> "Could not recognize filename"
-                                    Just svgp -> "(%i) " ++ x ++ "\n" ++ svgp
-                             else "(%i) " ++ x ++ "\n" ++ y -- x is input string
+                                    Just svgfname -> astr x svgfname
+                             else astr x y 
+                   where          astr al be = "(%i) " ++ al ++ "\n" ++ be -- answer string
 
+   
 formhandler p ior x =
                 case x of Nothing -> return formone -- Just a is result returned by servant -- an input string
                           Just a  -> do manswer@(_:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1      <- liftIO (readIORef ior)               --- DANGER!!! 
                                         let ma  = tailLine manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
                                         let ma1 = answerMach a ma                    -- check if input a is a plot command
+                                        let maplotless = makeform ma1 ""
                                         case svgfile ma of
                                                 Nothing -> do
-                                                  let newlog1 = log1 <> makeform ma1 ""
+                                                  let newlog1 = log1 <> maplotless
                                                   liftIO (writeIORef ior newlog1)
-                                                  return (log1 <> (makeform ma1 ""))
+                                                  return (log1 <> maplotless)
                                                 Just svgfpath -> do
                                                   svgcontent <- liftIO (readFile svgfpath)
-                                                  let newlog1 = log1 <> makeform ma1 ""
+                                                  let newlog1 = log1 <> maplotless
                                                   liftIO (writeIORef ior newlog1)
-                                                  return (log1 <> (makeform ma1  svgcontent))
+                                                  return (log1 <> makeform ma1 svgcontent)
 
 
 -- ** Server and main
 
 maximaAPI                     = Proxy                                          :: Proxy MaximaAPI 
-server   p flog               = formhandler p flog :<|> return (formone)          -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
+server   p flog               = formhandler p flog :<|> return formone         -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI) :<|> Server MaximaAPI
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
