@@ -69,13 +69,15 @@ svgfile x = case parseOnly svgfilep (B.pack x) of
               Right r -> Just (B.unpack r)
                  
   
--- ** Form and main
+-- ** Forms and handlers
 
 formone    =  Form "Maxima input here: " "maximaquery" ""
 
 -- Maxima answer is of the form " \n(%o3)....\n"
-form12 s plot =  Form s "maximaquery" plot 
-form2 p ior x = case x of Nothing -> return formone -- a is result returned by servant -- an input string
+makeform string plot =  Form (pack string) "maximaquery" (pack plot)
+
+formhandler p ior x =
+                case x of Nothing -> return formone -- a is result returned by servant -- an input string
                           Just a  -> do ma@(manswer:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1 <- liftIO (readIORef ior)               --- DANGER!!! 
                                         let ma1 = if isplot a then case (svgfile ((P.unlines . tail . P.lines) ma)) of
@@ -84,24 +86,24 @@ form2 p ior x = case x of Nothing -> return formone -- a is result returned by s
                                                               else "(%i) " ++ a ++ "\n" ++ (P.unlines . tail . P.lines) ma -- a is input string
                                         case (svgfile ((P.unlines . tail . P.lines) ma)) of
                                                                      Nothing -> do
-                                                                                  let newlog1 = log1 <> form12 (pack ma1) ""
+                                                                                  let newlog1 = log1 <> makeform ma1 ""
                                                                                   liftIO (writeIORef ior newlog1)
-                                                                                  return (log1 <> (form12 (pack ma1) ""))
+                                                                                  return (log1 <> (makeform ma1 ""))
                                                                      Just svgfpath -> do
                                                                        svgcontent <- liftIO (readFile svgfpath)
-                                                                       let newlog1 = log1 <> form12 (pack ma1) ""
+                                                                       let newlog1 = log1 <> makeform ma1 ""
                                                                        liftIO (writeIORef ior newlog1)
-                                                                       return (log1 <> (form12 (pack ma1) (pack svgcontent)))
+                                                                       return (log1 <> (makeform ma1  svgcontent))
 
 
 -- ** Server and main
 
 maximaAPI                     = Proxy                                          :: Proxy MaximaAPI 
-server   p flog               = form2 p flog :<|> return (formone)          -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
+server   p flog               = formhandler p flog :<|> return (formone)          -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI)
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params
-           flog   <- newIORef (form12 "" "")                            -- XXX: DANGER!!! IORefS!!
+           flog   <- newIORef (makeform "" "")                            -- XXX: DANGER!!! IORefS!!
            let app (p :: MaximaServerParams) = serve maximaAPI (server p flog) :: Application -- classic variable passing in argument
            -- _      <- askMaxima params "set_tex_environment_default (\"\", \"\")" -- setting correct output format
            _      <- askMaxima params "plotwi (x,y)::= plot2d(x,y,[svg_file,\"maximawi-plot.svg\"])" -- setting plot macro
