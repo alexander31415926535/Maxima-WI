@@ -45,12 +45,12 @@ instance ToHtml Form where
 instance Monoid Form where
   mempty        = Form "" "" ""
   mappend f1 f2 = Form (greeting f1 <> greeting f2) (action f1) (svgplot f2)
-
--- ** Main algorythm
 -- ** Parsing plot commands Svg output
 
 -- XXX: Plotting can be done using maxima macro :  plotwi(x,y) ::= plot2d(x,y,[svg_file,"maxima-wi-communication.svg"])
-
+-- XXX: 
+-- XXX: USE most general functions (applicative,monad operators) to make it EASY to switch main data structures.
+-- XXX: 
 (<^>) = flip (<?>)              -- more convenient help combinator
 
 svgfilep :: A.Parser B.ByteString
@@ -66,28 +66,24 @@ findsvg :: String -> Maybe String
 findsvg x = case parseOnly svgfilep (B.pack x) of
                   Left _ -> Nothing
                   Right r -> Just (B.unpack r)
-                 
-  
--- ** Forms and handlers
+
+-- ** Main algorythm
 
 -- Maxima answer is of the form " \n(%o3)....\n"
 
-formone            =  Form "Maxima input here: " "maximaquery" ""
+mkform str plot    =  Form (pack str) "maximaquery" (pack plot) ; formone  =  Form "Maxima input here: " "maximaquery" ""
 
-mkform str plot    =  Form (pack str) "maximaquery" (pack plot)
-
-answerMech int out = if isplot int then case findsvg out of
-                                    Nothing -> "Could not recognize filename"
-                                    Just svgfname -> astr int svgfname
-                             else astr int out 
-                   where          astr al be = "(%i) " ++ al ++ "\n" ++ be -- answer string
+answerMech i o     = if isplot i  then  case findsvg o of Nothing       -> "Could not recognize filename"
+                                                          Just svgfname -> astr i svgfname
+                                  else     astr i o 
+                   where                   astr al be = mconcat ["(%i) " , al , "\n" , be] -- answer string
    
 formhandler p ior x =
-                case x of Nothing -> return formone -- Just a below is result returned by servant -- an input string
+                case x of Nothing -> return formone                             -- Just a below is result returned by servant -- an input string
                           Just a  -> do manswer@(_:_) <- liftIO (askMaxima p a) -- here take whole argument not just first element
                                         log1          <- liftIO (readIORef ior) --- DANGER!!! 
-                                        let ma         = (P.unlines . tail . P.lines) manswer -- remove first line in maxima output which is -> " \n(%o34) ..."
-                                        let ma1        = answerMech a ma                    -- check if input a is a plot command
+                                        let ma         = (P.unlines . tail . P.lines) manswer --remove first line in maxima output which is -> " \n(%o34) ..."
+                                        let ma1        = answerMech a ma                      -- check if input a is a plot command
                                         let newlog1    = log1 <> mkform ma1 ""
                                         liftIO (writeIORef ior newlog1)
                                         case findsvg ma of
