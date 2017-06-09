@@ -31,7 +31,7 @@ type MaximaAPI = QueryParam "maximainput" String :> Get '[JSON, HTMLLucid] Form
 
 data Form = Form { greeting :: Text , action :: Text , svgplot :: Text } deriving Generic ; instance ToJSON Form
 
-instance ToHtml Form where
+instance ToHtml Form where   -- XXX: here rethinking is needed and new data structure (maybe greeting  -> [Text])
   toHtml form = printedtext <> plot <> formitself
     where
     printedtext = ol_ $ mconcat (map (li_ . toHtmlRaw) (lines (greeting form)))

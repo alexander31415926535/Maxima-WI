@@ -78,6 +78,7 @@ executable mconsole
                        wai >= 3.2.1.1,
                        warp >= 3.2.7,
                        xml >= 1.3.14
+                       hxt >= 9.3.1.16
   
   -- Directories containing source files.
   -- hs-source-dirs:      
