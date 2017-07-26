@@ -110,7 +110,7 @@ runMaxima port f = bracket (startMaximaServer port)
  
 
 terminateProcess2 :: ProcessHandle -> IO ()
-terminateProcess2 (ProcessHandle pmvar _) = 
+terminateProcess2 (ProcessHandle pmvar _ _) = 
     readMVar pmvar >>= \case 
         OpenHandle pid -> signalProcess 15 pid -- pid is a POSIX pid
         _              -> return () -- hlint suggested to remove otherwise here : Used otherwise as a pattern

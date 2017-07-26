@@ -1,8 +1,11 @@
-#!/usr/bin/runghc 
+#!/usr/local/bin/runghc 
 
 {-# LANGUAGE MultiWayIf #-}
 -- * Mconsole
 -- This module attempts to introduce unicode goodies into maxima text console. things like x^2 are written in proper unicode.
+
+-- * TODO
+-- TODO: Add command history between sessions
 
 -- * Imports
 module Main where
