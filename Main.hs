@@ -1,4 +1,4 @@
-#!/usr/bin/runghc 
+#!/usr/local/bin/runghc 
 -- * Imp
 -- ** Pragmas
 {-# LANGUAGE DataKinds             #-}
