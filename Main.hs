@@ -71,7 +71,8 @@ findsvg x = case parseOnly svgfilep (B.pack x) of
 
 -- Maxima answer is of the form " \n(%o3)....\n"
 
-mkform str plot    =  Form (pack str) "maximaquery" (pack plot) ; formone  =  Form "Maxima input here: " "maximaquery" ""
+mkform str plot =  Form (pack str) "maximaquery" (pack plot)
+formone         =  Form "Maxima input here: " "maximaquery" ""
 
 answerMech i o     = if isplot i  then  case findsvg o of Nothing       -> "Could not recognize filename"
                                                           Just svgfname -> astr i svgfname
@@ -95,8 +96,8 @@ formhandler p ior x =
 
 -- ** Server and main
 
-maximaAPI                     = Proxy                                          :: Proxy MaximaAPI 
-server   p flog               = formhandler p flog :<|> return formone         -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI) :<|> Server MaximaAPI
+maximaAPI       = Proxy                                          :: Proxy MaximaAPI 
+server   p flog = formhandler p flog :<|> return formone      -- :: (MaximaServerParams  -> IORef Form-> Server MaximaAPI) :<|> Server MaximaAPI
 
 main = do  params <- startMaximaServer 4424
            _      <- initMaximaVariables params

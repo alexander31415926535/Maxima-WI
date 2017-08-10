@@ -1,7 +1,7 @@
 { mkDerivation, aeson-compat, attoparsec, base, base-compat
 , bytestring, extra, http-media, lucid, mtl, network, process
 , servant-server, stdenv, string-conversions, texmath, text, unix
-, wai, warp, xml
+, wai, warp, xml, hxt
 }:
 mkDerivation {
   pname = "Maxima-WI";
@@ -12,7 +12,7 @@ mkDerivation {
   executableHaskellDepends = [
     aeson-compat attoparsec base base-compat bytestring extra
     http-media lucid mtl network process servant-server
-    string-conversions texmath text unix wai warp xml
+    string-conversions texmath text unix wai warp xml hxt
   ];
   description = "Server providing HTTP access to Maxima-CAS";
   license = stdenv.lib.licenses.gpl3;

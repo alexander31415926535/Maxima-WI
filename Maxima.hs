@@ -36,7 +36,7 @@ data MaximaServerParams = MaximaServerParams
 startMaximaServer port = withSocketsDo $ do
     conn          <-  listenServer port
     (_,_,_,pid)   <-  runInteractiveProcess "maxima"
-                                            ["-r", ":lisp (setup-client "++show port++")"] 
+                                            ["-r", ":lisp (setup-client "++show port++")"]--there is also -s option to connect to port,why lisp?
                                             Nothing Nothing
     (sock, _)     <-  accept conn
     socketHandle  <-  socketToHandle sock ReadWriteMode
