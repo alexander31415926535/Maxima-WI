@@ -2,7 +2,7 @@
 
 import Text.XML.HXT.Core
 
-prefix = "/usr/share/maxima/5.38.1/doc/html/maxima_" -- 89 --104
+prefix = "/usr/share/maxima/5.38.1/doc/html/maxima_" -- 89 --104 this url changes for different maxima versions
 
 fullindex = map (\x -> prefix ++ show x ++ ".html") [89 .. 104]
 
