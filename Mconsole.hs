@@ -77,3 +77,9 @@ mcompletion = completeWord Nothing [' '] helper
              | otherwise = return [simpleCompletion "help"]
 
 
+-- * Separate Functions for Ghci debug
+
+amu srv input = do
+  answer <- askMaxima srv input
+  let ans = tounicode (if length answer > 4 then init (drop 2 answer) else answer) -- XXX: ugly code to remove " \n" on both ends.
+  putStrLn ans
