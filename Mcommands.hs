@@ -1,4 +1,4 @@
-#!/usr/bin/runghc 
+#!/usr/bin/local/runghc 
 
 import Text.XML.HXT.Core
 
