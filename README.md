@@ -1,7 +1,7 @@
 
 Maxima-WI is a Maxima front-end for browser written in haskell.
 
-Low level maxima interaction is based on hsmaxima (https:://github.com/danbst/hsmaxima) by Danylo Hlynskyi.
+Low level maxima interaction is based on hsmaxima [hsmaxima](https:://github.com/danbst/hsmaxima) by Danylo Hlynskyi.
 
 Further development was done by AlexanderKu.
 
