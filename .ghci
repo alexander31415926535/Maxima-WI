@@ -7,8 +7,11 @@ divsum    = makeMF1 params "divsum"
 fib       = makeMF1 params "fib"
 lucas     = makeMF1 params "lucas"
 nextPrime = makeMF1 params "next_prime"
-a <- readFile "all-maxima-commands.txt"
-f = read a :: [String]
-res  <-  (mapM (\x-> makeMF1 params x 1) (Prelude.take 100 f)) 
-s = filter (\(x,y)-> case x of Nothing -> False; _ -> True) $ zipWith (,) res (Prelude.take 100 f)
+mkf1      = makeMF1 params
+mkf2      = makeMF2 params
+mkf3      = makeMF3 params
+-- a <- readFile "all-maxima-commands.txt"
+-- f = read a :: [String]
+-- res  <-  (mapM (\x-> makeMF1 params x 1) (Prelude.take 100 f)) 
+-- s = filter (\(x,y)-> case x of Nothing -> False; _ -> True) $ zipWith (,) res (Prelude.take 100 f)
 

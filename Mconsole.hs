@@ -95,39 +95,40 @@ amu srv input = do
 envarg f s = f++"("++show s++")"     -- envelope argument
 envarg0 f s = f++show s              -- envelope argument
 
+
+parsenumber :: String -> IO (Maybe Int)
+parsenumber str = case parseOnly mxNumber (pack str) of 
+                    Left _      -> return Nothing
+                    Right numbr -> return (Just numbr)
+
+
 factorial :: MaximaServerParams -> Int -> IO (Maybe Int)
 factorial srv x = do
     answer <- fmap (head . tail . lines) $ askMaxima srv (envarg "factorial" x)
-    case parseOnly mxNumber (pack answer) of
-         Left _     -> return Nothing
-         Right numbr -> return (Just numbr)
+    parsenumber answer
   
 binomial :: MaximaServerParams -> (Int,Int) -> IO (Maybe Int)
-binomial srv x = do
-    answer <- fmap (head . tail . lines) $ askMaxima srv (envarg0 "binomial" x)
-    case parseOnly mxNumber (pack answer) of
-         Left _     -> return Nothing
-         Right numbr -> return (Just numbr)
+binomial srv x = 
+    fmap (head . tail . lines) (askMaxima srv (envarg0 "binomial" x)) >>= parsenumber
 
+    
 makeMF1 :: MaximaServerParams  -> String -> (Int -> IO (Maybe Int)) -- general function maker
 makeMF1 srv fname = \x ->  do
     answer <- fmap (head . tail . lines) $ askMaxima srv (envarg fname x)
-    case parseOnly mxNumber (pack answer) of
-         Left _     -> return Nothing
-         Right numbr -> return (Just numbr)
-
+    parsenumber answer
+    
 
 makeMF2 :: MaximaServerParams  -> String -> ((Int,Int) -> IO (Maybe Int)) -- general function maker
 makeMF2 srv fname = \x ->  do
     answer <- fmap (head . tail . lines) $ askMaxima srv (envarg0 fname x)
-    case parseOnly mxNumber (pack answer) of
-         Left _     -> return Nothing
-         Right numbr -> return (Just numbr)
-
+    parsenumber answer
+    
 makeMF3 :: MaximaServerParams  -> String -> ((Int,Int,Int) -> IO (Maybe Int)) -- general function maker
 makeMF3 srv fname = \x ->  do
     answer <- fmap (head . tail . lines) $ askMaxima srv (envarg fname x)
-    case parseOnly mxNumber (pack answer) of
-         Left _     -> return Nothing
-         Right numbr -> return (Just numbr)
+    parsenumber answer
+    
+
+makeMFG :: MaximaServerParams  -> String -> (Int -> IO String) -- general function maker
+makeMFG srv fname = \x -> askMaxima srv (envarg fname x)
 
