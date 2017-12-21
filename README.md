@@ -12,4 +12,4 @@ Project is in a very early stage of development, every feedback is welcomed.
 Mathjax and plotting support are planned features.
 
 
-(c) Danylo Hlynskyi & AlexanderKu 2017
+(c) Danylo Hlynskyi & AlexanderKu 2018
